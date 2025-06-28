@@ -169,7 +169,7 @@ end
 -- 判斷 auxStr 是否匹配 fullAux
 -----------------------------------------------
 
---- >>> auxStr用户输入的辅助码，fullAux候选词的辅助码组合，depLength双拼字符长度。
+--- >>> auxStr用户输入的辅助码，fullAux候选词的辅助码组合，depLength双拼字符长度（两个双拼字母算一个字符长度）。
 function AuxFilter.match(fullAux, auxStr, dpLength)
     if #fullAux == 0 then
         return false
@@ -179,14 +179,21 @@ function AuxFilter.match(fullAux, auxStr, dpLength)
 
     local fKeyMatched = true
     local sKeyMatched = true
+    -- local singleMatched = true -- 当词组不存在时，保留首个单字作为备选
+
+    -- 档fullaux长度为1时，代表待选项为单字。
 
     for i=1, #auxStr do
         if i <= dpLength then
-            local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i]:find(auxStr:sub(i, i)) ~= nil
-            fKeyMatched = fKeyMatched and tempKeyMatched
-        elseif i <= dpLength*2 then
-            local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i - dpLength]:find(auxStr:sub(i, i)) ~= nil
-            sKeyMatched = sKeyMatched and tempKeyMatched
+            if fullAux[i] then -- 不与上一个if合并是因为合并后单字单字末位形码会进else的break，导致无法进一步筛选。
+                local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i]:find(auxStr:sub(i, i)) ~= nil --如果不加if检测，单字会在此处fullAux[i]报错，从而不能保留为备选项
+                fKeyMatched = fKeyMatched and tempKeyMatched
+            end
+        elseif dpLength < i and i <= dpLength*2 then
+            if fullAux[i - dpLength] then
+                local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i - dpLength]:find(auxStr:sub(i, i)) ~= nil
+                sKeyMatched = sKeyMatched and tempKeyMatched
+            end
         else
             break
         end
