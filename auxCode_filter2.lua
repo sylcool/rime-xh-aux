@@ -21,6 +21,8 @@ end
 function AuxFilter.init(env)
     -- log.info("** AuxCode filter", env.name_space)
 
+    
+
     AuxFilter.aux_code = AuxFilter.readAuxTxt(env.name_space)
 
     local engine = env.engine
@@ -43,6 +45,10 @@ function AuxFilter.init(env)
             return
         end
 
+        -- ctx.input是用户输入的双拼原型，preedit.text是用户选择了某个字后汉字与双拼的组合。
+        -- 用「你好」举例。
+        -- ctx.input nihc;rx
+        -- preedit.text 你 hc;
         local preedit = ctx:get_preedit()
         local removeAuxInput = ctx.input:match("([^,]+)" .. env.trigger_key_string)
         local reeditTextFront = preedit.text:match("([^,]+)" .. env.trigger_key_string)
@@ -165,6 +171,33 @@ function AuxFilter.fullAux(env, word)
     return fullAuxCodes -- {"char1_auxCode1", "char2_auxCode2", ...}
 end
 
+
+-----------------------------------------------
+---用于两个匹配形码
+-----------------------------------------------
+function MatchXM(s1, s2, wildcard)
+    -- 设置默认通配符
+    wildcard = wildcard or '`'
+
+    -- 检查字符串长度
+    if #s1 ~= 2 or #s2 ~= 2 then
+        return false
+    end
+
+    -- 判断两个字符是否匹配，允许通配符
+    local function is_match(c1, c2)
+        return c1 == wildcard or c2 == wildcard or c1 == c2
+    end
+
+    -- 提取字符
+    local c1, c2 = s1:sub(1,1), s1:sub(2,2)
+    local d1, d2 = s2:sub(1,1), s2:sub(2,2)
+
+    -- 判断是否匹配（原顺序或颠倒顺序）
+    return (is_match(c1, d1) and is_match(c2, d2)) or
+           (is_match(c1, d2) and is_match(c2, d1))
+end
+
 -----------------------------------------------
 -- 判斷 auxStr 是否匹配 fullAux
 -----------------------------------------------
@@ -186,12 +219,15 @@ function AuxFilter.match(fullAux, auxStr, dpLength)
     for i=1, #auxStr do
         if i <= dpLength then
             if fullAux[i] then -- 不与上一个if合并是因为合并后单字单字末位形码会进else的break，导致无法进一步筛选。
+                -- if #fullAux == 1 then 
+                --     local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i]:find(auxStr:sub(i, i)) ~= nil 
+                -- end
                 local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i]:find(auxStr:sub(i, i)) ~= nil --如果不加if检测，单字会在此处fullAux[i]报错，从而不能保留为备选项
                 fKeyMatched = fKeyMatched and tempKeyMatched
             end
         elseif dpLength < i and i <= dpLength*2 then
             if fullAux[i - dpLength] then
-                local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i - dpLength]:find(auxStr:sub(i, i)) ~= nil
+                local tempKeyMatched = MatchXM(fullAux[i - dpLength], auxStr:sub(i-dpLength, i-dpLength) .. auxStr:sub(i, i)) --fullAux[i - dpLength]:find(auxStr:sub(i, i)) ~= nil
                 sKeyMatched = sKeyMatched and tempKeyMatched
             end
         else
@@ -212,6 +248,9 @@ end
 function AuxFilter.func(input, env)
     local context = env.engine.context
     local inputCode = context.input
+    local preedit = context:get_preedit()
+
+    
 
     -- 分割部分正式開始
     local auxStr = ''
@@ -237,9 +276,10 @@ function AuxFilter.func(input, env)
             -- log.info('re.match ' .. local_split)
         end
 
-        local localSplit2 = inputCode:match("([^,]+)" .. trigger_pattern)
-        if localSplit2 then
-            dpLength = math.ceil((string.len(localSplit2) - 1) / 2)
+        local reeditTextFront = preedit.text:match("([a-z]+)" .. trigger_pattern) -- 根据剩下的双拼码而改变长度。
+        -- local localSplit2 = inputCode:match("([^,]+)" .. trigger_pattern)
+        if reeditTextFront then
+            dpLength = math.ceil((#reeditTextFront - 1) / 2)
             -- log.info('re.match ' .. local_split)
         end
 
