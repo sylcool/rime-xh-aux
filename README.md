@@ -51,5 +51,17 @@
 ![图片](https://github.com/user-attachments/assets/afdcecc5-f0b9-43c8-8ee0-cbb0273011ef)
 ![图片](https://github.com/user-attachments/assets/3fa58ab2-87aa-4a1b-8660-59487dab7088)
 
+## 使用方法
+方法1：
+1. 将`auxCode_filter2.lua`下载到`RimeUserFolder\lua`目录内。
+2. 在「RimeUserFolder」中找到`double_pinyin_flypy.schema.yaml`文件，打开并找到`engine`下的`filters`选项。
+3. 将`filters`选项下的`lua_filter@*auxCode_filter@flypy_full`改为`lua_filter@*auxCode_filter2@flypy_full`后保存文件。
+4. 重新部署输入法。
+
+方法2:
+1. 也可以将仓库中`auxCode_filter2.lua`内的代码用来直接覆盖掉`RimeUserFolder\lua`下的`auxCode_filter.lua`文件代码。
+2. 重新部署输入法。
+
+
 ## 更新记录
 - 2025-07-22 新增[单字筛选方案](#11-筛选单字)。
