@@ -212,10 +212,8 @@ function AuxFilter.match(fullAux, auxStr, dpLength)
 
     local fKeyMatched = true
     local sKeyMatched = true
-    -- local singleMatched = true -- 当词组不存在时，保留首个单字作为备选
 
-    -- 档fullaux长度为1时，代表待选项为单字。
-
+    -- 当fullaux长度为1时，代表待选项为单字。
     for i=1, #auxStr do
         if i <= dpLength then
             if fullAux[i] then -- 不与上一个if合并是因为合并后单字单字末位形码会进else的break，导致无法进一步筛选。
@@ -224,6 +222,10 @@ function AuxFilter.match(fullAux, auxStr, dpLength)
                 -- end
                 local tempKeyMatched = auxStr:sub(i, i) == '`' or fullAux[i]:find(auxStr:sub(i, i)) ~= nil --如果不加if检测，单字会在此处fullAux[i]报错，从而不能保留为备选项
                 fKeyMatched = fKeyMatched and tempKeyMatched
+            elseif i == 2 and #auxStr == 2 then -- 当待选项为单字，且辅助码只有2位时，第二位辅助码直接当作单字的第二位形码进行匹配。
+                local tempKeyMatched = MatchXM(fullAux[1], auxStr)
+                sKeyMatched = sKeyMatched and tempKeyMatched
+                break
             end
         elseif dpLength < i and i <= dpLength*2 then
             if fullAux[i - dpLength] then
@@ -234,7 +236,6 @@ function AuxFilter.match(fullAux, auxStr, dpLength)
             break
         end
     end
-
 
     return fKeyMatched and sKeyMatched
 
